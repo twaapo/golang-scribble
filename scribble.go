@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -124,16 +125,18 @@ func (d *Driver) Write(collection, resource string, v interface{}) error {
 }
 
 // Read a record from the database
-func (d *Driver) Read(collection, resource string, v interface{}) error {
+func (d *Driver) Read(collection, resource string) (io.Reader, error) {
 
+    var r io.Reader
+    var err error
 	// ensure there is a place to save record
 	if collection == "" {
-		return fmt.Errorf("Missing collection - no place to save record!")
+		return r, fmt.Errorf("Missing collection - no place to save record!")
 	}
 
 	// ensure there is a resource (name) to save record as
 	if resource == "" {
-		return fmt.Errorf("Missing resource - unable to save record (no name)!")
+		return r, fmt.Errorf("Missing resource - unable to save record (no name)!")
 	}
 
 	//
@@ -141,17 +144,12 @@ func (d *Driver) Read(collection, resource string, v interface{}) error {
 
 	// check to see if file exists
 	if _, err := stat(record); err != nil {
-		return err
+		return r, err
 	}
 
 	// read record from database
-	b, err := ioutil.ReadFile(record + ".json")
-	if err != nil {
-		return err
-	}
-
-	// unmarshal data
-	return json.Unmarshal(b, &v)
+    r, err = os.Open(record + ".json")
+	return r, err
 }
 
 // ReadAll records from a collection; this is returned as a slice of strings because
